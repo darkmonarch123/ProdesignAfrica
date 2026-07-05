@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Stored as "R G B" triplets (no commas) so Tailwind can apply opacity
+     modifiers via rgb(var(--x) / <alpha-value>) — see tailwind.config.ts */
+  --color-canvas: 247 245 240;
+  --color-surface: 255 255 255;
+  --color-ink: 26 26 46;
+  --color-accent-primary: 4 120 87;
+  --color-accent-secondary: 16 185 129;
+  --color-accent-earth: 194 105 42;
+  --color-accent-gold: 212 160 23;
+  --color-stroke: 201 196 184;
+  --color-muted: 136 136 136;
+  --color-danger: 226 75 74;
+  --color-warn: 217 119 6;
+  --color-panel-dark: 26 26 46;
+  --color-blueprint: 0 51 102;
+  --color-blue: 24 95 165;
+  --color-green-bg: 225 245 238;
+
+  --font-serif: 'DM Serif Display', serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: rgb(var(--color-canvas));
+  color: rgb(var(--color-ink));
+  font-family: var(--font-sans);
+}
+
+@keyframes panel-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.panel-enter {
+  animation: panel-in 420ms var(--ease-spring);
+}
