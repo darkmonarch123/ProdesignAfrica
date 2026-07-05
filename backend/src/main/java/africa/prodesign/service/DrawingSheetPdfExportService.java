@@ -26,21 +26,6 @@ import java.util.List;
  * Plots the project's latest drawing to a scaled, print-ready architectural
  * sheet: bordered page, overall-envelope dimension lines, a fixed north
  * arrow, an accurate scale bar, and a title block.
- *
- * HONEST SCOPE LIMITATIONS, stated here and printed on the sheet itself:
- *  - Only overall building envelope dimensions are shown (total width/depth)
- *    — no per-wall or per-room dimension strings yet. That's the natural next
- *    increment on top of this.
- *  - The north arrow always points up the page. The drawing schema doesn't
- *    yet capture true site orientation, so this is a fixed convention, not a
- *    measured bearing.
- *  - The title block has a blank "ARCON Reg. No." line and an explicit
- *    disclaimer that this sheet has not been reviewed or stamped by a
- *    registered professional — this tool must never imply a certification it
- *    hasn't performed.
- *  - If the requested scale doesn't fit the chosen paper size, the scale is
- *    automatically loosened (e.g. 1:100 -> 1:125) to fit rather than clipping
- *    the drawing, and the sheet says so explicitly in the title block.
  */
 @Service
 @Slf4j
@@ -125,7 +110,7 @@ public class DrawingSheetPdfExportService {
             case "A2" -> PageSize.A2;
             default -> PageSize.A3;
         };
-        return base.rotate(); // architectural sheets are conventionally landscape
+        return base.rotate();
     }
 
     // ---------- Drawing ----------
@@ -133,20 +118,19 @@ public class DrawingSheetPdfExportService {
     private void drawSheetBorder(PdfContentByte canvas, Rectangle pageSize) {
         canvas.setColorStroke(INK);
         canvas.setLineWidth(1.2f);
-        canvas.rectangle(10, 10, pageSize.getWidth() - 20, pageSize.getHeight() - 20);
+        canvas.rectangle(10f, 10f, pageSize.getWidth() - 20f, pageSize.getHeight() - 20f);
         canvas.stroke();
     }
 
     private void drawDrawing(PdfContentByte canvas, Geometry geometry, double originX, double originY, double pointsPerMeter) {
         if (geometry.isEmpty()) return;
 
-        // Rooms first (fills), then walls (on top), then openings (on top of walls)
         for (RoomShape room : geometry.rooms) {
             canvas.setColorFill(parseColorOrDefault(room.floorColor, new Color(225, 245, 238)));
-            canvas.moveTo(toPx(room.points.get(0)[0], geometry.minX, originX, pointsPerMeter),
-                    toPy(room.points.get(0)[1], geometry.minY, originY, pointsPerMeter));
+            canvas.moveTo((float) toPx(room.points.get(0)[0], geometry.minX, originX, pointsPerMeter),
+                    (float) toPy(room.points.get(0)[1], geometry.minY, originY, pointsPerMeter));
             for (double[] p : room.points.subList(1, room.points.size())) {
-                canvas.lineTo(toPx(p[0], geometry.minX, originX, pointsPerMeter), toPy(p[1], geometry.minY, originY, pointsPerMeter));
+                canvas.lineTo((float) toPx(p[0], geometry.minX, originX, pointsPerMeter), (float) toPy(p[1], geometry.minY, originY, pointsPerMeter));
             }
             canvas.closePath();
             canvas.fill();
@@ -155,16 +139,16 @@ public class DrawingSheetPdfExportService {
             double cy = room.points.stream().mapToDouble(p -> p[1]).average().orElse(0);
             double px = toPx(cx, geometry.minX, originX, pointsPerMeter);
             double py = toPy(cy, geometry.minY, originY, pointsPerMeter);
-            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(room.label, ROOM_LABEL_FONT), (float) px, (float) py + 4, 0);
-            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(String.format("%.1fm²", room.area), ROOM_AREA_FONT), (float) px, (float) py - 5, 0);
+            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(room.label, ROOM_LABEL_FONT), (float) px, (float) py + 4f, 0f);
+            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(String.format("%.1fm²", room.area), ROOM_AREA_FONT), (float) px, (float) py - 5f, 0f);
         }
 
         for (WallShape wall : geometry.walls) {
             canvas.setColorStroke(INK);
             canvas.setLineWidth((float) Math.max(1.0, wall.thickness * pointsPerMeter));
             canvas.setLineCap(PdfContentByte.LINE_CAP_PROJECTING_SQUARE);
-            canvas.moveTo(toPx(wall.x1, geometry.minX, originX, pointsPerMeter), toPy(wall.y1, geometry.minY, originY, pointsPerMeter));
-            canvas.lineTo(toPx(wall.x2, geometry.minX, originX, pointsPerMeter), toPy(wall.y2, geometry.minY, originY, pointsPerMeter));
+            canvas.moveTo((float) toPx(wall.x1, geometry.minX, originX, pointsPerMeter), (float) toPy(wall.y1, geometry.minY, originY, pointsPerMeter));
+            canvas.lineTo((float) toPx(wall.x2, geometry.minX, originX, pointsPerMeter), (float) toPy(wall.y2, geometry.minY, originY, pointsPerMeter));
             canvas.stroke();
         }
 
@@ -183,8 +167,8 @@ public class DrawingSheetPdfExportService {
 
             canvas.setColorStroke("DOOR".equals(opening.type) ? new Color(194, 105, 42) : new Color(24, 95, 165));
             canvas.setLineWidth((float) Math.max(1.5, wall.thickness * pointsPerMeter + 1));
-            canvas.moveTo(toPx(sx, geometry.minX, originX, pointsPerMeter), toPy(sy, geometry.minY, originY, pointsPerMeter));
-            canvas.lineTo(toPx(ex, geometry.minX, originX, pointsPerMeter), toPy(ey, geometry.minY, originY, pointsPerMeter));
+            canvas.moveTo((float) toPx(sx, geometry.minX, originX, pointsPerMeter), (float) toPy(sy, geometry.minY, originY, pointsPerMeter));
+            canvas.lineTo((float) toPx(ex, geometry.minX, originX, pointsPerMeter), (float) toPy(ey, geometry.minY, originY, pointsPerMeter));
             canvas.stroke();
 
             if ("DOOR".equals(opening.type)) {
@@ -206,13 +190,11 @@ public class DrawingSheetPdfExportService {
         canvas.setColorStroke(MUTED);
         canvas.setLineWidth(0.5f);
 
-        // Bottom dimension: total width
         double y = originY - 14;
         double x1 = toPx(geometry.minX, geometry.minX, originX, pointsPerMeter);
         double x2 = toPx(geometry.maxX, geometry.minX, originX, pointsPerMeter);
         drawDimensionLine(canvas, x1, y, x2, y, String.format("%.2fm", geometry.width()), true);
 
-        // Left dimension: total depth
         double x = originX - 14;
         double y1 = toPy(geometry.minY, geometry.minY, originY, pointsPerMeter);
         double y2 = toPy(geometry.maxY, geometry.minY, originY, pointsPerMeter);
@@ -220,23 +202,23 @@ public class DrawingSheetPdfExportService {
     }
 
     private void drawDimensionLine(PdfContentByte canvas, double x1, double y1, double x2, double y2, String label, boolean horizontal) {
-        canvas.moveTo(x1, y1);
-        canvas.lineTo(x2, y2);
+        canvas.moveTo((float) x1, (float) y1);
+        canvas.lineTo((float) x2, (float) y2);
         canvas.stroke();
         double tick = 3;
-        canvas.moveTo(x1 - (horizontal ? 0 : tick), y1 - (horizontal ? tick : 0));
-        canvas.lineTo(x1 + (horizontal ? 0 : tick), y1 + (horizontal ? tick : 0));
+        canvas.moveTo((float) (x1 - (horizontal ? 0 : tick)), (float) (y1 - (horizontal ? tick : 0)));
+        canvas.lineTo((float) (x1 + (horizontal ? 0 : tick)), (float) (y1 + (horizontal ? tick : 0)));
         canvas.stroke();
-        canvas.moveTo(x2 - (horizontal ? 0 : tick), y2 - (horizontal ? tick : 0));
-        canvas.lineTo(x2 + (horizontal ? 0 : tick), y2 + (horizontal ? tick : 0));
+        canvas.moveTo((float) (x2 - (horizontal ? 0 : tick)), (float) (y2 - (horizontal ? tick : 0)));
+        canvas.lineTo((float) (x2 + (horizontal ? 0 : tick)), (float) (y2 + (horizontal ? tick : 0)));
         canvas.stroke();
 
         double midX = (x1 + x2) / 2;
         double midY = (y1 + y2) / 2;
         if (horizontal) {
-            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(label, DIM_FONT), (float) midX, (float) midY - 9, 0);
+            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(label, DIM_FONT), (float) midX, (float) midY - 9f, 0f);
         } else {
-            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(label, DIM_FONT), (float) midX, (float) midY, 90);
+            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(label, DIM_FONT), (float) midX, (float) midY, 90f);
         }
     }
 
@@ -246,13 +228,13 @@ public class DrawingSheetPdfExportService {
         canvas.setColorStroke(INK);
         canvas.setColorFill(INK);
         canvas.setLineWidth(1f);
-        canvas.moveTo(x, y - 10);
-        canvas.lineTo(x, y + 10);
-        canvas.lineTo(x - 4, y + 4);
-        canvas.moveTo(x, y + 10);
-        canvas.lineTo(x + 4, y + 4);
+        canvas.moveTo((float) x, (float) (y - 10));
+        canvas.lineTo((float) x, (float) (y + 10));
+        canvas.lineTo((float) (x - 4), (float) (y + 4));
+        canvas.moveTo((float) x, (float) (y + 10));
+        canvas.lineTo((float) (x + 4), (float) (y + 4));
         canvas.stroke();
-        ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase("N", LABEL_FONT), (float) x, (float) y + 14, 0);
+        ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase("N", LABEL_FONT), (float) x, (float) y + 14f, 0f);
     }
 
     private void drawScaleBar(PdfContentByte canvas, Rectangle pageSize, int scale, double pointsPerMeter) {
@@ -266,16 +248,16 @@ public class DrawingSheetPdfExportService {
             double x2 = startX + marks[i + 1] * pointsPerMeter;
             if (i % 2 == 0) {
                 canvas.setColorFill(INK);
-                canvas.rectangle((float) x1, (float) y, (float) (x2 - x1), 4);
+                canvas.rectangle((float) x1, (float) y, (float) (x2 - x1), 4f);
                 canvas.fill();
             } else {
-                canvas.rectangle((float) x1, (float) y, (float) (x2 - x1), 4);
+                canvas.rectangle((float) x1, (float) y, (float) (x2 - x1), 4f);
                 canvas.stroke();
             }
         }
         for (int m : marks) {
             double x = startX + m * pointsPerMeter;
-            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(m + "m", DIM_FONT), (float) x, (float) y + 8, 0);
+            ColumnText.showTextAligned(canvas, Element.ALIGN_CENTER, new com.lowagie.text.Phrase(m + "m", DIM_FONT), (float) x, (float) y + 8f, 0f);
         }
     }
 
@@ -290,11 +272,11 @@ public class DrawingSheetPdfExportService {
 
         double colWidth = width / 4;
         for (int i = 1; i < 4; i++) {
-            canvas.moveTo(x + i * colWidth, y);
-            canvas.lineTo(x + i * colWidth, y + TITLE_BLOCK_HEIGHT_PT);
+            canvas.moveTo((float) (x + i * colWidth), (float) y);
+            canvas.lineTo((float) (x + i * colWidth), (float) (y + TITLE_BLOCK_HEIGHT_PT));
         }
-        canvas.moveTo(x, y + TITLE_BLOCK_HEIGHT_PT * 0.55);
-        canvas.lineTo(x + width, y + TITLE_BLOCK_HEIGHT_PT * 0.55);
+        canvas.moveTo((float) x, (float) (y + TITLE_BLOCK_HEIGHT_PT * 0.55));
+        canvas.lineTo((float) (x + width), (float) (y + TITLE_BLOCK_HEIGHT_PT * 0.55));
         canvas.stroke();
 
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
@@ -311,18 +293,18 @@ public class DrawingSheetPdfExportService {
 
         ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT,
                 new com.lowagie.text.Phrase("This drawing has not been reviewed or stamped by a registered professional. For design development only.", DISCLAIMER_FONT),
-                (float) (x + 3 * colWidth + 6), (float) (y + TITLE_BLOCK_HEIGHT_PT * 0.55 - 12), 0);
+                (float) (x + 3 * colWidth + 6), (float) (y + TITLE_BLOCK_HEIGHT_PT * 0.55 - 12), 0f);
 
         if (geometry.isEmpty()) {
             ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT,
                     new com.lowagie.text.Phrase("No drawing found — this sheet shows the title block only.", DISCLAIMER_FONT),
-                    (float) (x + 6), (float) (y + TITLE_BLOCK_HEIGHT_PT * 0.55 - 30), 0);
+                    (float) (x + 6), (float) (y + TITLE_BLOCK_HEIGHT_PT * 0.55 - 30), 0f);
         }
     }
 
     private void placeLabel(PdfContentByte canvas, double x, double y, String label, String value) {
-        ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT, new com.lowagie.text.Phrase(label, LABEL_FONT), (float) x, (float) y, 0);
-        ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT, new com.lowagie.text.Phrase(value, TITLE_FONT), (float) x, (float) y - 10, 0);
+        ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT, new com.lowagie.text.Phrase(label, LABEL_FONT), (float) x, (float) y, 0f);
+        ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT, new com.lowagie.text.Phrase(value, TITLE_FONT), (float) x, (float) y - 10f, 0f);
     }
 
     private Color parseColorOrDefault(String hex, Color fallback) {
@@ -341,8 +323,6 @@ public class DrawingSheetPdfExportService {
     private double toPy(double worldY, double minY, double originY, double pointsPerMeter) {
         return originY + (worldY - minY) * pointsPerMeter;
     }
-
-    // ---------- Geometry parsing (mirrors ComplianceService/BoqService — see their Javadoc re: duplication) ----------
 
     private Geometry parseGeometry(String canvasStateJson) {
         Geometry geometry = new Geometry();
@@ -377,7 +357,7 @@ public class DrawingSheetPdfExportService {
                     }
                 } else if ("DOOR".equals(type) || "WINDOW".equals(type)) {
                     geometry.openings.add(new OpeningShape(type, el.path("hostWallId").asText(),
-                            el.path("x").asDouble(), el.path("width").asDouble(0.9)));
+                            el.path("x").asDouble(), el.path("y").asDouble(), el.path("width").asDouble(0.9)));
                 }
             }
         } catch (Exception e) {
@@ -399,7 +379,7 @@ public class DrawingSheetPdfExportService {
 
     private record WallShape(String id, double x1, double y1, double x2, double y2, double thickness) {}
     private record RoomShape(String label, List<double[]> points, String floorColor, double area) {}
-    private record OpeningShape(String type, String hostWallId, double x, double width) {}
+    private record OpeningShape(String type, String hostWallId, double x, double y, double width) {}
 
     private static class Geometry {
         double minX = Double.POSITIVE_INFINITY, minY = Double.POSITIVE_INFINITY;

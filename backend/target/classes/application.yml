@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: prodesign-africa
+  datasource:
+    url: jdbc:h2:mem:prodesign;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:noreply@prodesign.africa}
+    password: ${MAIL_PASSWORD:changeme}
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+          connectiontimeout: 3000
+          timeout: 3000
+          writetimeout: 3000
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+server:
+  port: 8080
+
+prodesign:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-change-me-dev-only-change-me-32bytes}
+    access-token-minutes: 15
+    refresh-token-days: 30
+  paystack:
+    secret-key: ${PAYSTACK_SECRET_KEY:pk_test_placeholder}
+  flutterwave:
+    secret-key: ${FLUTTERWAVE_SECRET_KEY:FLWSECK_TEST_placeholder}
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:sk-ant-placeholder}
+    model: claude-sonnet-4-6
+    base-url: https://api.anthropic.com/v1/messages
+  cors:
+    allowed-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  admin:
+    seed-email: ${ADMIN_SEED_EMAIL:}
+    seed-password: ${ADMIN_SEED_PASSWORD:}
+
+resilience4j:
+  ratelimiter:
+    instances:
+      aiLayout:
+        limitForPeriod: 5
+        limitRefreshPeriod: 1h
+        timeoutDuration: 0s
+      authLogin:
+        limitForPeriod: 10
+        limitRefreshPeriod: 15m
+        timeoutDuration: 0s
+
+logging:
+  level:
+    africa.prodesign: INFO
