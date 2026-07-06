@@ -14,11 +14,12 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:noreply@prodesign.africa}
-    password: ${MAIL_PASSWORD:changeme}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
+          auth: true
           starttls:
             enable: true
           connectiontimeout: 3000
