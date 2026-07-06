@@ -14,12 +14,11 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:noreply@prodesign.africa}
+    password: ${MAIL_PASSWORD:changeme}
     properties:
       mail:
         smtp:
-          auth: true
           starttls:
             enable: true
           connectiontimeout: 3000
@@ -63,6 +62,11 @@ resilience4j:
         limitForPeriod: 10
         limitRefreshPeriod: 15m
         timeoutDuration: 0s
+
+management:
+  health:
+    mail:
+      enabled: false
 
 logging:
   level:
