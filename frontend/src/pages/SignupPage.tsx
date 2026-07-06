@@ -4,6 +4,33 @@ import { register as registerApi } from '../api/auth';
 import AuthShell from '../components/auth/AuthShell';
 import { Field, SelectField } from '../components/auth/Field';
 
+/**
+ * Validates if a password contains trivial repetitive or sequential patterns.
+ * Returns true if it contains 3+ repeated characters (e.g., "111") 
+ * or 3+ sequential characters (e.g., "abc", "123", "321").
+ */
+function isPasswordSequentialOrRepetitive(str: string): boolean {
+  // 1. Check for 3+ consecutive identical characters (e.g., "111", "aaa")
+  if (/([a-zA-Z0-9])\1{2,}/.test(str)) {
+    return true;
+  }
+
+  // 2. Check for 3+ consecutive ascending or descending sequences (e.g., "123", "abc")
+  for (let i = 0; i < str.length - 2; i++) {
+    const c1 = str.charCodeAt(i);
+    const c2 = str.charCodeAt(i + 1);
+    const c3 = str.charCodeAt(i + 2);
+
+    // Ascending sequence (e.g., a-b-c or 1-2-3)
+    if (c2 === c1 + 1 && c3 === c2 + 1) return true;
+    
+    // Descending sequence (e.g., c-b-a or 3-2-1)
+    if (c2 === c1 - 1 && c3 === c2 - 1) return true;
+  }
+
+  return false;
+}
+
 export default function SignupPage() {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
@@ -18,6 +45,13 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // Enforce sequence and repetition restriction
+    if (isPasswordSequentialOrRepetitive(password)) {
+      setError('Password cannot contain simple sequences or repetitive characters (e.g., 111, 123, abc).');
+      return;
+    }
+
     setLoading(true);
     try {
       await registerApi(email, password, fullName);
